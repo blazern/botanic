@@ -2,6 +2,13 @@ services:
   api:
     build:
       context: ..
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/api/Dockerfile
     ports:
       - "8080:8000"
+  bot:
+    build:
+      context: ..
+      dockerfile: docker/bot/Dockerfile
+      args:
+        - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:?telegram bot token must be set}
+

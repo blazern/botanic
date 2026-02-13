@@ -49,4 +49,8 @@ jobs:
         run: |
           ansible-playbook -i inventory.ini setup_all.yaml \
             -e "domain_name=${{ secrets.SERVER_HOSTNAME }}" \
-            -e "certbot_email=${{ secrets.CERTBOT_EMAIL }}"
+            -e "certbot_email=${{ secrets.CERTBOT_EMAIL }}" \
+            -e "telegram_bot_token=${{ secrets.TELEGRAM_BOT_TOKEN }}"
+
+
+

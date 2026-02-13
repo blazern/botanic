@@ -1,20 +1,26 @@
-- name: Set up and run the Python server
+- name: Set up and run the Python servers
   hosts: myhosts
   become: true
 
   vars:
-    app_dir: /opt/botanist
-    repo_url: https://github.com/blazern/botanist.git
+    app_dir: /opt/botanic
+    repo_url: https://github.com/blazern/botanic.git
     docker_compose_file: docker/docker-compose.yml
 
   tasks:
+    - name: Check required variables
+      assert:
+        that:
+          - telegram_bot_token is defined
+        fail_msg: "You must provide all required variables"
+
     - name: Ensure git is installed
       apt:
         name: git
         state: present
         update_cache: yes
 
-    - name: Clone Botanist repository
+    - name: Clone Botanic repository
       git:
         repo: "{{ repo_url }}"
         dest: "{{ app_dir }}"
@@ -29,3 +35,5 @@
       command: docker compose -f {{ docker_compose_file }} up -d --build
       args:
         chdir: "{{ app_dir }}"
+      environment:
+        TELEGRAM_BOT_TOKEN: "{{ telegram_bot_token }}"

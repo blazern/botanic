@@ -17,4 +17,4 @@ ENV ILLNESS_SCHEDULE_DIR=/app/files/illness_schedule
 
 EXPOSE 8000
 
-CMD ["uvicorn", "python.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "python.http_server:app", "--host", "0.0.0.0", "--port", "8000"]

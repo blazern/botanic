@@ -1,2 +1,3 @@
 fastapi==0.128.1
 uvicorn[standard]==0.40.0
+aiogram==3.25.0

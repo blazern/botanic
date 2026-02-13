@@ -100,8 +100,8 @@
 
               server_name {{ domain_name }};
 
-              # Python backend under /botanist/
-              location /botanist/ {
+              # Python backend under /botanic/
+              location /botanic/ {
                   proxy_pass         http://python_backend/;
                   proxy_http_version 1.1;
 
@@ -111,8 +111,8 @@
                   proxy_set_header   X-Forwarded-Proto $scheme;
               }
 
-              location = /botanist {
-                return 301 /botanist/;
+              location = /botanic {
+                return 301 /botanic/;
               }
           }
       notify: Reload nginx
