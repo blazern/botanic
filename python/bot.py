@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import sys
+import time
 from os import getenv
 from pathlib import Path
 
@@ -8,6 +9,7 @@ from html import escape as html_escape
 from aiogram import Bot, Dispatcher, html
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
 
@@ -98,22 +100,29 @@ async def llm_article_search(message: Message) -> None:
         await message.answer(MSG_NO_RELEVANT_ARTICLE)
         return
 
-    await message.answer(f"Обрабатываю запрос")
+    request_id = _make_request_id()
+    status_message = await message.answer(f"Обрабатываю запрос (ID {request_id})")
+    progress_task = asyncio.create_task(_progress_updater(status_message, request_id))
 
     try:
         found_any = False
-
-        results = await asyncio.to_thread(
-            llm.find_relevant_articles,
-            user_medical_condition=user_text,
-            illness_schedule_dir=ILLNESS_SCHEDULE_DIR,
-            openai_key=OPENAI_API_KEY,
-        )
-        for item in results:
+        async for item in llm.find_relevant_articles(
+                user_medical_condition=user_text,
+                illness_schedule_dir=ILLNESS_SCHEDULE_DIR,
+                openai_key=OPENAI_API_KEY,
+        ):
+            progress_task.cancel()
             found_any = True
             await _send_in_chunks(message, _format_article(item))
+            status_message = await message.answer(f"Ищу другие релевантные статьи ({request_id})")
+            progress_task = asyncio.create_task(_progress_updater(status_message, request_id))
 
-        if not found_any:
+        progress_task.cancel()
+        await status_message.delete()
+
+        if found_any:
+            await message.answer(f"Поиск закончен")
+        else:
             await message.answer(MSG_NO_RELEVANT_ARTICLE)
 
     except Exception as e:
@@ -159,6 +168,24 @@ def _format_article(item: llm.RelevantArticleData) -> str:
     text = "\n".join(part for part in parts if part)
     return text
 
+async def _progress_updater(status_message: Message, request_id: str) -> None:
+    seconds = 0
+    try:
+        while True:
+            await asyncio.sleep(5)
+            seconds += 5
+            try:
+                await status_message.edit_text(
+                    f"Ещё обрабатываю запрос ({request_id})... прошло {seconds} сек."
+                )
+            except TelegramBadRequest:
+                # message deleted / can't edit / etc.
+                return
+    except asyncio.CancelledError:
+        pass
+
+def _make_request_id() -> str:
+    return str(hex(int(time.time()))[-6:])
 
 async def main() -> None:
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))

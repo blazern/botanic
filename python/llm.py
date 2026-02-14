@@ -1,14 +1,14 @@
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Generator
+from typing import AsyncIterator
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 import illness_schedule
 from illness_schedule import Article
 
-CHAT_GPT_MODEL = "gpt-5-nano-2025-08-07"
+CHAT_GPT_MODEL = "gpt-5-mini-2025-08-07"
 
 CHAT_GPT_INSTRUCTION_SELECT_ARTICLES = """
 You are given a JSON object with:
@@ -72,22 +72,22 @@ class RelevantArticleData:
     reasoning: str
     quotes: list[str]
 
-def find_relevant_articles(
+async def find_relevant_articles(
         user_medical_condition: str,
         illness_schedule_dir: Path,
         openai_key: str,
-) -> Generator[RelevantArticleData, None, None]:
+) -> AsyncIterator[RelevantArticleData]:
     """
     Yields LLM replies with relevant articles to the user medical condition.
     """
-    chatgpt_client = OpenAI(api_key=openai_key)
+    chatgpt_client = AsyncOpenAI(api_key=openai_key)
 
     articles_headers = illness_schedule.get_articles_headers(illness_schedule_dir)
     articles_headers_input = {
         "user_medical_condition": user_medical_condition,
         "articles_headers": [{ "number": header.number, "header": header.text } for header in articles_headers],
     }
-    articles_numbers_response = chatgpt_client.responses.create(
+    articles_numbers_response = await chatgpt_client.responses.create(
         instructions=CHAT_GPT_INSTRUCTION_SELECT_ARTICLES,
         input=json.dumps(articles_headers_input),
         model=CHAT_GPT_MODEL,
@@ -104,7 +104,7 @@ def find_relevant_articles(
             "article_text": article.text,
         }
 
-        quotes_response = chatgpt_client.responses.create(
+        quotes_response = await chatgpt_client.responses.create(
             instructions=CHAT_GPT_INSTRUCTION_FIND_QUOTES,
             input=json.dumps(input_artile),
             model=CHAT_GPT_MODEL,
