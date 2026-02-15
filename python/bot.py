@@ -129,6 +129,7 @@ async def llm_article_search(message: Message) -> None:
     except Exception as e:
         logging.exception("LLM article search failed", exc_info=e)
         await message.answer(f"Внутренняя ошибка: {html.quote(str(e))}")
+        progress_task.cancel()
 
 
 def _format_article(item: llm.RelevantArticleData) -> str:
